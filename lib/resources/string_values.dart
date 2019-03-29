@@ -1,0 +1,19 @@
+const String AccessToken = "access_token";
+const String TokenType = "token_type";
+const String ExpiresIn = "expires_in";
+const String RefreshToken = "refresh_token";
+const String Scope = "scope";
+const String CreatedAt = "created_at";
+const String UserId = "user_id";
+const String Username = "username";
+const String Password = "password";
+
+const String Amazon = "Amazon";
+const String CrunchyRoll = "Crunchyroll";
+const String Funimation = "Funimation";
+const String HIDIVE = "HIDIVE";
+const String Hulu = "Hulu";
+const String Netflix = "Netflix";
+const String TubiTV = "TubiTV";
+const String Viewster = "Viewster";
+const String YouTube = "YouTube";
