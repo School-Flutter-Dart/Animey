@@ -153,6 +153,13 @@ final reactionSkippedValues = new EnumValues({
 });
 
 enum Status { COMPLETED, ONHOLD, CURRENT, DROPPED , PLANNED}
+const Map<Status,String> StatusToStringMap={
+  Status.COMPLETED:'Complete',
+  Status.ONHOLD:'On Hold',
+  Status.CURRENT:'Current',
+  Status.DROPPED:'Dropped',
+  Status.PLANNED:'Planned'
+};
 
 final statusValues = new EnumValues({
   "completed": Status.COMPLETED,
@@ -190,7 +197,7 @@ class Relationships {
   factory Relationships.fromJson(Map<String, dynamic> json) => new Relationships(
     user: json["user"] == null ? null : Links.fromJson(json["user"]["links"]),
     anime: json["anime"] == null ? null : Links.fromJson(json["anime"]["links"]),
-    animeId: json["anime"]['data']['id'] == null ? null : json["anime"]["data"]["id"],
+    animeId: json["anime"]['data'] == null ? null : json["anime"]["data"]["id"],
     manga: json["manga"] == null ? null : Links.fromJson(json["manga"]["links"]),
     drama: json["drama"] == null ? null : Links.fromJson(json["drama"]["links"]),
     review: json["review"] == null ? null : Links.fromJson(json["review"]["links"]),

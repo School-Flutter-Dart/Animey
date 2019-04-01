@@ -122,6 +122,8 @@ class AnimesApiProvider {
     }
   }
 
+  
+
   @Deprecated("avoid using this shit, messy as hell")
   Future<List<Anime>> fetchAnimesFromLibraryEntries(List<LibraryEntry> libraryEntries) async {
     var animes = List<Anime>();

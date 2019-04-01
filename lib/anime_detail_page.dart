@@ -19,6 +19,8 @@ import 'utils/http_utils.dart';
 import 'package:http/http.dart';
 import 'package:animey/reactions_section.dart';
 import 'ui/streamer_card.dart';
+import 'blocs/login_bloc_provider.dart';
+import 'utils/model_utils.dart';
 
 import 'models/category.dart';
 
@@ -90,7 +92,7 @@ class BackdropPosterState extends State<BackdropPoster> {
           _opacity = (160 - widget.scrollController.offset) / 160;
           _sigma = 10 - _opacity * 10;
         });
-      }else{
+      } else {
         _opacity = 0;
       }
     });
@@ -160,12 +162,17 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final sliverAppBarKey = GlobalKey();
   final scrollController = ScrollController();
-  final animeBloc = AnimeBloc();
-  final postBloc = PostBloc();
+  final animeBloc = AnimeBloc(); //for fetching things about this anime
+  final postBloc = PostBloc(); //for fetching post related to this anime
+  final libraryEntriesBloc = LibraryEntriesBloc();
   Anime anime;
   String genresLink;
   bool showRemoveFB = false;
-  bool initialized = false;
+  bool isInitialized = false;
+  bool isAuthed = false;
+  String userId;
+  Stream stream;
+  Status status;
 
   @override
   void initState() {
@@ -187,6 +194,22 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!isInitialized) {
+      isAuthed = LoginBlocProvider.of(context).isAuthed;
+      if (isAuthed) {
+        userId = LoginBlocProvider.of(context).authedUserId;
+        libraryEntriesBloc.fetchLibraryEntriesDataByAnimeId(userId, widget.animeId);
+        stream = libraryEntriesBloc.libraryEntriesData;
+        stream.listen((data) {
+          var entry = data as LibraryEntriesData;
+          setState(() {
+            status = entry.data.isNotEmpty ? entry.data.first.attributes.status : null;
+          });
+        });
+      }
+      isInitialized = true;
+    }
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: Colors.white,
@@ -223,7 +246,7 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
                             child: RaisedButton(
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
                               child: Text(
-                                "Watch trailer",
+                                "Watch Trailer",
                                 style: TextStyle(color: Colors.white),
                               ),
                               onPressed: () {
@@ -232,6 +255,66 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
                             ),
                           ),
                         ),
+                        isAuthed && status != null
+                            ? Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Container(
+                                  width: double.infinity,
+                                  child: RaisedButton(
+                                    color: Colors.grey,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                                    child: Text(
+                                      statusToStringConverter(status),
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: handleRemovePressed,
+                                  ),
+                                ),
+                              )
+                            : Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Container(
+                                  width: double.infinity,
+                                  child: RaisedButton(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                                    child: Text(
+                                      "Add To My Library",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: () {},
+                                  ),
+                                ),
+                              ),
+                        widget.isFromLibrary
+                            ? Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Container(
+                                  width: double.infinity,
+                                  child: RaisedButton(
+                                    color: Colors.grey,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                                    child: Text(
+                                      "Remove From My Library",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: handleRemovePressed,
+                                  ),
+                                ),
+                              )
+                            : Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 10),
+                                child: Container(
+                                  width: double.infinity,
+                                  child: RaisedButton(
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(4))),
+                                    child: Text(
+                                      "Add To My Library",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    onPressed: handleAddPressed,
+                                  ),
+                                ),
+                              ),
                         Padding(
                             padding: EdgeInsets.symmetric(horizontal: 0),
                             child: Container(
@@ -242,22 +325,24 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
                             padding: EdgeInsets.symmetric(horizontal: 0),
                             child: StreamBuilder(
                               stream: animeBloc.categories,
-                              builder: (_, AsyncSnapshot<List<Category>> snapshot){
-                                if(snapshot.hasData){
+                              builder: (_, AsyncSnapshot<List<Category>> snapshot) {
+                                if (snapshot.hasData) {
                                   return _ChipsRow(categories: snapshot.data);
-                                }else if(snapshot.hasError){
+                                } else if (snapshot.hasError) {
                                   return Center(
                                     child: Text(snapshot.error),
                                   );
-                                }else{
+                                } else {
                                   return Container();
                                 }
                               },
-                            )
-                        ),
+                            )),
                         Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 0),
-                            child: _EpisodesRow(animeId: anime.id, fallbackLink: anime.attributes.posterImage.medium,),
+                          padding: EdgeInsets.symmetric(horizontal: 0),
+                          child: _EpisodesRow(
+                            animeId: anime.id,
+                            fallbackLink: anime.attributes.posterImage.medium,
+                          ),
                         ),
                         Padding(
                           padding: EdgeInsets.symmetric(horizontal: 8),
@@ -321,20 +406,25 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
                         ),
                         //buildRelatedSection(),
                         IntrinsicHeight(
-                          child: StreamBuilder(
-                            stream: postBloc.posts,
-                            builder: (_, AsyncSnapshot<List<PostModel.Post>> snapshot){
-                              if(snapshot.hasData){
-                                var posts = snapshot.data;
-                                return Column(
-                                  children: posts.map((post)=>PostCard(post:post, keepPadding: true,padding: 8,)).toList(),
-                                );
-                              }else{
-                                return Container();
-                              }
-                            },
-                          )
-                        ),
+                            child: StreamBuilder(
+                          stream: postBloc.posts,
+                          builder: (_, AsyncSnapshot<List<PostModel.Post>> snapshot) {
+                            if (snapshot.hasData) {
+                              var posts = snapshot.data;
+                              return Column(
+                                children: posts
+                                    .map((post) => PostCard(
+                                          post: post,
+                                          keepPadding: true,
+                                          padding: 8,
+                                        ))
+                                    .toList(),
+                              );
+                            } else {
+                              return Container();
+                            }
+                          },
+                        )),
                         Container(
                           height: 80,
                         )
@@ -352,29 +442,29 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
           }
         },
       ),
-      floatingActionButton: AnimatedContainer(
-        duration: Duration(milliseconds: 500),
-        child: widget.isFromLibrary
-            ? FloatingActionButton.extended(
-                heroTag: "fab1",
-                backgroundColor: Colors.grey,
-                icon: Icon(Icons.clear),
-                label: Text(
-                  'REMOVE FROM LIBRARY',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                onPressed: handleRemovePressed,
-              )
-            : FloatingActionButton.extended(
-                heroTag: "fab2",
-                icon: Icon(Icons.add),
-                label: Text(
-                  'ADD TO MY LIBRARY',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                onPressed: handleAddPressed,
-              ),
-      ),
+//      floatingActionButton: AnimatedContainer(
+//        duration: Duration(milliseconds: 500),
+//        child: widget.isFromLibrary
+//            ? FloatingActionButton.extended(
+//                heroTag: "fab1",
+//                backgroundColor: Colors.grey,
+//                icon: Icon(Icons.clear),
+//                label: Text(
+//                  'REMOVE FROM LIBRARY',
+//                  style: TextStyle(fontWeight: FontWeight.bold),
+//                ),
+//                onPressed: handleRemovePressed,
+//              )
+//            : FloatingActionButton.extended(
+//                heroTag: "fab2",
+//                icon: Icon(Icons.add),
+//                label: Text(
+//                  'ADD TO MY LIBRARY',
+//                  style: TextStyle(fontWeight: FontWeight.bold),
+//                ),
+//                onPressed: handleAddPressed,
+//              ),
+//      ),
     );
   }
 
@@ -384,12 +474,16 @@ class _AnimeDetailPageState extends State<AnimeDetailPage> {
       builder: (_, AsyncSnapshot<List<StreamingLink>> asyncSnapshot) {
         if (asyncSnapshot.hasData) {
           var streamingLinks = asyncSnapshot.data;
-          return streamingLinks.isEmpty?Container(child: Center(child: Text('No streamer offers this one.')),):ListView(
-            scrollDirection: Axis.horizontal,
-            children: streamingLinks
-                .map((link) => StreamerCard(siteName: link.streamer.attributes.siteName, onTap: () => launchURL(link.attributes.url)))
-                .toList(),
-          );
+          return streamingLinks.isEmpty
+              ? Container(
+                  child: Center(child: Text('No streamer offers this one.')),
+                )
+              : ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: streamingLinks
+                      .map((link) => StreamerCard(siteName: link.streamer.attributes.siteName, onTap: () => launchURL(link.attributes.url)))
+                      .toList(),
+                );
         } else if (asyncSnapshot.hasError)
           return Center(child: Text(asyncSnapshot.error));
         else
@@ -859,20 +953,20 @@ class _ChipsRow extends StatelessWidget {
   }
 }
 
-class _EpisodesRow extends StatefulWidget{
+class _EpisodesRow extends StatefulWidget {
   final String animeId;
   final String fallbackLink;
 
   _EpisodesRow({@required this.animeId, @required this.fallbackLink});
 
   @override
-  State<StatefulWidget> createState() =>_EpisodesRowState();
+  State<StatefulWidget> createState() => _EpisodesRowState();
 }
 
-class _EpisodesRowState extends State<_EpisodesRow>{
+class _EpisodesRowState extends State<_EpisodesRow> {
   final animeBloc = AnimeBloc();
   final scrollController = ScrollController();
-  
+
   @override
   void initState() {
     super.initState();
@@ -921,33 +1015,33 @@ class _EpisodesRowState extends State<_EpisodesRow>{
     children.addAll(episodes.map((episode) {
       episodeIndex++;
       return Padding(
-        padding: EdgeInsets.only(right: 8),
-        child: Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(borderRaius))),
-          child: Container(
-            height: 100,
-            decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(borderRaius))),
-            child: Stack(
-              alignment: Alignment.center,
-              children: <Widget>[
-                ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(borderRaius)),
-                  child: FadeInImage.memoryNetwork(
-                      fit: BoxFit.fitHeight,
-                      placeholder: kTransparentImage,
-                      image: episode.attributes.thumbnail == null?widget.fallbackLink:episode.attributes.thumbnail.original
-                  ),
-                ),
-                Align(
+          padding: EdgeInsets.only(right: 8),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(borderRaius))),
+            child: Container(
+                height: 100,
+                decoration: BoxDecoration(borderRadius: BorderRadius.all(Radius.circular(borderRaius))),
+                child: Stack(
                   alignment: Alignment.center,
-                  child: Text(episodeIndex.toString(),style: TextStyle(color: Colors.white70, fontSize: 48),),
-                )
-              ],
-            )
-          ),
-        )
-      );
+                  children: <Widget>[
+                    ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(borderRaius)),
+                      child: FadeInImage.memoryNetwork(
+                          fit: BoxFit.fitHeight,
+                          placeholder: kTransparentImage,
+                          image: episode.attributes.thumbnail == null ? widget.fallbackLink : episode.attributes.thumbnail.original),
+                    ),
+                    Align(
+                      alignment: Alignment.center,
+                      child: Text(
+                        episodeIndex.toString(),
+                        style: TextStyle(color: Colors.white70, fontSize: 48),
+                      ),
+                    )
+                  ],
+                )),
+          ));
     }));
     return children;
   }

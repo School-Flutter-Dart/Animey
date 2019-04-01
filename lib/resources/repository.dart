@@ -27,7 +27,6 @@ class Repository {
   final streamingLinkApiProvider = StreamingLinkApiProvider();
   final groupsApiProvider = GroupsApiProvider();
 
-
   Future<List<Category>> fetchCategoriesByAnimeId(String animeId) => categoryApiProvider.fetchCategoriesByAnimeId(animeId);
 
   ///User
@@ -67,9 +66,12 @@ class Repository {
   Future<List<Episode>> fetchEpisodesByAnimeId(String animeId, {int offset = 0}) async =>
       animesApiProvider.fetchEpisodesByAnimeId(animeId, offset: offset);
 
+  ///LibraryEntries
   @Deprecated("avoid using this, messy as hell")
   Future<Map<LibraryEntry, Anime>> fetchLibraryEntryToAnimeMap(List<LibraryEntry> libraryEntries) =>
       animesApiProvider.fetchLibraryEntryToAnimeMap(libraryEntries);
+
+  Future<LibraryEntriesData> fetchLibraryEntriesDataByAnimeId(String userId, String animeId) => libraryEntriesApiProvider.fetchLibraryEntriesDataByAnimeId(userId, animeId);
 
   Future addLibraryEntry(String animeId, Status status) => libraryEntriesApiProvider.addLibraryEntry(animeId, status);
 
@@ -80,7 +82,7 @@ class Repository {
 
   Stream<Post> fetchPost({int offset = 0}) => postApiProvider.fetchPost(offset: offset);
 
-  Stream<Post> fetchPostsByAnimeId(String animeId,{int offset = 0}) => postApiProvider.fetchPostsByAnimeId(animeId,offset: offset);
+  Stream<Post> fetchPostsByAnimeId(String animeId, {int offset = 0}) => postApiProvider.fetchPostsByAnimeId(animeId, offset: offset);
 
   Stream<Post> fetchFeedPost({int offset = 0}) => postApiProvider.fetchFeedPost(offset: offset);
 

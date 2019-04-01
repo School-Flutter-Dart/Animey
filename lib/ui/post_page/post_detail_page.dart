@@ -307,7 +307,6 @@ class _CustomFABState extends State<CustomFAB> {
                       ],
                     )))
             : FloatingActionButton(
-                heroTag: 'asd',
                 child: Icon(Icons.create),
                 onPressed: () {
                   //showDialog(context: context, builder: (context)=>buildInputDialog(context));

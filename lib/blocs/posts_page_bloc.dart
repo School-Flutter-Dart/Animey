@@ -16,54 +16,56 @@ class PostsPageBloc {
   Observable<List<Comment>> get comments => _commentsFetcher.stream;
 
   Future fetchPosts() async {
-    _repository.fetchPost(offset: _postsOffset).listen((post){
-      if(post == null){//the fetching failed
+    _repository.fetchPost(offset: _postsOffset).listen((post) {
+      if (post == null) {
+        //the fetching failed
 
       }
 
-      if(!_postsFetcher.isClosed&&(_posts.isEmpty || _posts.where((p)=>p.id == post.id).isEmpty)){
+      if (!_postsFetcher.isClosed && (_posts.isEmpty || _posts.where((p) => p.id == post.id).isEmpty)) {
         _posts.add(post);
         _postsFetcher.sink.add(_posts);
       }
-    },onError: (error){
+    }, onError: (error) {
       print("ONERROR REACHED!!!");
       _postsFetcher.sink.addError('Something went wrong ヾ(°д°)ノ゛');
     });
-    _postsOffset+=10;
+    _postsOffset += 10;
     return Future.delayed(Duration(seconds: 3));
   }
 
-  Future<void> fetchFeedPosts() async{
-    _repository.fetchFeedPost(offset: _postsOffset).listen((post){
-      if(!_postsFetcher.isClosed&&(_posts.isEmpty || _posts.where((p)=>p.id == post.id).isEmpty)){
+  Future fetchFeedPosts() async {
+    _repository.fetchFeedPost(offset: _postsOffset).listen((post) {
+      if (!_postsFetcher.isClosed && (_posts.isEmpty || _posts.where((p) => p.id == post.id).isEmpty)) {
         _posts.add(post);
         _postsFetcher.sink.add(_posts);
       }
     });
-    _postsOffset+=10;
+    _postsOffset += 10;
+    return Future.delayed(Duration(seconds: 3));
   }
 
-  void uploadComment(String postId, String content)async{
+  void uploadComment(String postId, String content) async {
     var comment = await _repository.uploadComment(postId, content);
-    if(comment != null){
+    if (comment != null) {
       _comments.add(comment);
       _commentsFetcher.sink.add(_comments);
     }
   }
 
   void fetchComments(String postId) async {
-    _repository.fetchComments(postId, offset: _commentsOffset).listen((comment){
+    _repository.fetchComments(postId, offset: _commentsOffset).listen((comment) {
       _comments.add(comment);
       _commentsFetcher.sink.add(_comments);
     });
 //    var comments = await _repository.fetchComments(postId, offset: _commentsOffset);
 //    _comments.addAll(comments);
 //    _commentsFetcher.sink.add(_comments);
-    _commentsOffset+=10;
+    _commentsOffset += 10;
   }
 
-  void resetCommentsFetcher(){
-    _commentsOffset= 0;
+  void resetCommentsFetcher() {
+    _commentsOffset = 0;
     _comments.clear();
     _commentsFetcher.drain();
   }

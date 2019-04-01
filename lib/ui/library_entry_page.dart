@@ -187,19 +187,7 @@ class _LibraryEntryPageState extends State<LibraryEntryPgae> {
                                         child: Row(
                                           mainAxisAlignment: MainAxisAlignment.center,
                                           children: <Widget>[
-                                            FlatButton(
-                                              child: Icon(Icons.remove),
-                                              onPressed: () {
-                                                ///TODO: implement
-                                              },
-                                            ),
                                             Text('${entry.attributes.progress}/${entry.anime.attributes.episodeCount}'),
-                                            FlatButton(
-                                              child: Icon(Icons.add),
-                                              onPressed: () {
-                                                ///TODO: implement
-                                              },
-                                            )
                                           ],
                                         ),
                                       ),
@@ -219,70 +207,6 @@ class _LibraryEntryPageState extends State<LibraryEntryPgae> {
                     ),
                   ),
                 );
-//                return Container(
-//                  color: Colors.white,
-//                  child: ListTile(
-//                      onTap: () {
-//                        Navigator.push(
-//                            context,
-//                            MaterialPageRoute(
-//                                builder: (_) => AnimeDetailPage(
-//                                      animeId: entry.relationships.animeId,
-//                                      tag: "entry" + entry.relationships.animeId,
-//                                    )));
-//                      },
-//                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-//                      leading: Container(
-//                          height: 80,
-//                          child: Hero(
-//                            tag: "entry" + entry.anime.id,
-//                            child: FadeInImage.memoryNetwork(
-//                              fit: BoxFit.contain,
-//                              placeholder: kTransparentImage,
-//                              image: entry.anime.attributes.posterImage.small,
-//                            ),
-//                          )),
-//                      title: Text(entry.anime.attributes.canonicalTitle),
-//                      subtitle: Column(
-//                        children: <Widget>[
-//                          Padding(
-//                              padding: EdgeInsets.symmetric(vertical: 8),
-//                              child: Stack(
-//                                alignment: Alignment.center,
-//                                children: <Widget>[
-//                                  Align(
-//                                    alignment: Alignment.centerLeft,
-//                                    child: Text('${entry.attributes.progress}/${entry.anime.attributes.episodeCount}'),
-//                                  ),
-//                                  Align(
-//                                    alignment: Alignment.centerRight,
-//                                    child: Row(
-//                                      mainAxisAlignment: MainAxisAlignment.end,
-//                                      children: <Widget>[
-//                                        FlatButton(
-//                                          child: Icon(Icons.add),
-//                                          onPressed: (){
-//                                            ///TODO: implement
-//                                          },
-//                                        ),
-//                                        FlatButton(
-//                                          child: Icon(Icons.remove),
-//                                          onPressed: (){
-//                                            ///TODO: implement
-//                                          },
-//                                        )
-//                                      ],
-//                                    ),
-//                                  ),
-//                                ],
-//                              )),
-//                          LinearProgressIndicator(
-//                            value:
-//                                entry.attributes.progress / (entry.anime.attributes.episodeCount == null ? 1 : entry.anime.attributes.episodeCount),
-//                          )
-//                        ],
-//                      )),
-//                );
               },
               separatorBuilder: (_, index) => Divider(
                     height: 0,

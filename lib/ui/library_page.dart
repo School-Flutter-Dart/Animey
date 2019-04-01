@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:animey/blocs/anime_bloc.dart';
 import 'package:animey/blocs/anime_bloc_provider.dart';
@@ -11,6 +12,7 @@ import 'package:animey/ui/streamer_card.dart';
 import 'package:animey/anime_info_card.dart';
 import 'package:animey/resources/string_values.dart';
 import 'package:animey/utils/model_utils.dart';
+import 'package:animey/anime_detail_page.dart';
 
 const SeasonList = <String>["Spring", "Summer", "Fall", "Winter"];
 const SeasonFilterStrList = <String>["&filter[season]=spring", "&filter[season]=summer", "&filter[season]=fall", "&filter[season]=winter"];
@@ -52,7 +54,19 @@ class _LibraryPageState extends State<LibraryPage> {
 
   @override
   Widget build(BuildContext context) {
-    return buildLibraryPage();
+    return  Scaffold(
+      appBar: AppBar(
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              showSearch(context: context, delegate: AnimeSearch());
+            },
+          )
+        ],
+      ),
+      body: buildLibraryPage(),
+    );
   }
 
   Widget buildLibraryPage() {
@@ -70,7 +84,7 @@ class _LibraryPageState extends State<LibraryPage> {
         Positioned(
             top: 0,
             child: Container(
-                height: MediaQuery.of(context).size.height - 150,
+                height: MediaQuery.of(context).size.height - 130,
                 width: MediaQuery.of(context).size.width,
                 child: SingleChildScrollView(
                   controller: scrollController,
@@ -236,5 +250,105 @@ class _LibraryPageState extends State<LibraryPage> {
         ),
       ),
     );
+  }
+}
+
+class AnimeSearch extends SearchDelegate<String> {
+  Utf8Decoder _utf8decoder = Utf8Decoder();
+
+  ///actions for app bar
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = "";
+        },
+      )
+    ];
+  }
+
+  ///leading icon on the left of the app bar
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: AnimatedIcon(icon: AnimatedIcons.menu_arrow, progress: transitionAnimation),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  ///
+  @override
+  Widget buildResults(BuildContext context) {
+    if (query.isNotEmpty) {
+      final url = "https://kitsu.io/api/edge/anime?filter[text]=" + query;
+
+      return FutureBuilder(
+          future: http.get(url),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              var animes = animesFromJson(_utf8decoder.convert((snapshot.data as http.Response).bodyBytes));
+
+              return ListView.builder(
+                  itemCount: animes.length,
+                  itemBuilder: (context, i) {
+                    return AnimeInfoCard(animes[i], tag: "img" + i.toString(), onTapCallback: () {
+                      String result = "";
+                      this.close(context, result);
+                    });
+                  });
+            } else {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          });
+    } else {
+      return Container();
+    }
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    if (query.isNotEmpty) {
+      final url = "https://kitsu.io/api/edge/anime?filter[text]=" + query;
+
+      return FutureBuilder(
+          future: http.get(url),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              var animes = animesFromJson(_utf8decoder.convert((snapshot.data as http.Response).bodyBytes));
+
+              return ListView.separated(
+                  itemCount: animes.length,
+                  separatorBuilder: (context, index) => Divider(),
+                  itemBuilder: (context, i) {
+                    return ListTile(
+                      onTap: () {
+                        this.close(context, animes[i].id);
+                        Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => AnimeDetailPage(
+                                  tag: animes[i].id,
+                                  animeId: animes[i].id,
+                                ),
+                                maintainState: true));
+                      },
+                      title: Text(animes[i].attributes.canonicalTitle),
+                    );
+                  });
+            } else {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+          });
+    } else {
+      return Container();
+    }
   }
 }

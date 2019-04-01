@@ -45,6 +45,11 @@ class LibraryEntriesBloc{
     }
   }
 
+  void fetchLibraryEntriesDataByAnimeId(String userId, String animeId) async {
+    LibraryEntriesData data = await _repository.fetchLibraryEntriesDataByAnimeId(userId, animeId);
+    if(!_libraryEntriesDataFetcher.isClosed) _libraryEntriesDataFetcher.sink.add(data);
+  }
+
   initializeLibraryEntriesData() async{
     if(userBloc.userId != null && !_initialized){
       LibraryEntriesData data = await _repository.fetchLibraryEntriesData(userBloc.userId).whenComplete(()=>_initialized = true);

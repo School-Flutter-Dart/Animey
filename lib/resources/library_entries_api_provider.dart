@@ -10,6 +10,18 @@ import 'string_values.dart';
 class LibraryEntriesApiProvider {
   Client client = Client();
 
+  Future<LibraryEntriesData> fetchLibraryEntriesDataByAnimeId(String userId, String animeId)async{
+    String url = 'https://kitsu.io/api/edge/library-entries?filter%5Buser_id%5D=$userId&filter%5Banime_id%5D=$animeId&include=mediaReaction&page%5Blimit%5D=1';
+    var response = await client.get(url);
+    if(response.statusCode==200){
+      var json = convertToUtf8Json(response.bodyBytes);
+      var data = LibraryEntriesData.fromJson(json);
+      return data;
+    }else{
+      throw Exception('Failed to load lbraryEntries data by anime id');
+    }
+  }
+
   Future<LibraryEntriesData> fetchLibraryEntriesData(String id) async {
     print("the link is https://kitsu.io/api/edge/users/$id/library-entries?filter[kind]=anime&include=anime");
     var response = await client.get(

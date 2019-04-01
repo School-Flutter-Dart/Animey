@@ -15,6 +15,7 @@ class LoginBloc {
   final _userIdFetcher = BehaviorSubject<String>();
   bool isAuthed = false;
   String accessToken;
+  String authedUserId;
 
   Observable<bool> get loginStatusBool => _loginStatusBoolFetcher.stream;
   Observable<LoginStatus> get loginStatus => _loginStatusFetcher.stream;
@@ -42,6 +43,7 @@ class LoginBloc {
 
     if (wasSuccessful) {
       accessToken = sharedPreferences.getString(AccessToken);
+      authedUserId = sharedPreferences.getString(UserId);
       //userBloc.fetchLoggedInUserId();
       String id = await _repository.fetchLoggedInUserId();
       sharedPreferences.setString(UserId, id);
@@ -59,7 +61,6 @@ class LoginBloc {
   }
 
   void handleSignout() async {
-    print("im handle signout");
     _loginStatusFetcher.sink.add(LoginStatus.NOT_LOGGED_IN);
     _loginStatusBoolFetcher.sink.add(false);
 
